@@ -14,7 +14,7 @@ def main() -> None:
         exit(1)
 
     # Load parameters
-    prepare_params = yaml.safe_load(open("params.yml"))["prepare"]
+    prepare_params = yaml.safe_load(open("params.yaml"))["prepare"]
 
     raw_dataset_folder = Path(sys.argv[1])
     prepared_dataset_folder = Path(sys.argv[2])
