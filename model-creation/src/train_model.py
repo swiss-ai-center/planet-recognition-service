@@ -145,7 +145,7 @@ def main() -> None:
 
     # Save the model
     model_folder.mkdir(parents=True, exist_ok=True)
-    model.save(str(model_folder))
+    model.save("model/planet_recognition_model.h5", save_format='h5')
 
     # Save the model history
     np.save(model_folder / "history.npy", model.history.history)
