@@ -1,5 +1,7 @@
 import asyncio
 import time
+
+from PIL import Image
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
@@ -19,15 +21,22 @@ from common_code.common.models import FieldDescription, ExecutionUnitTag
 from contextlib import asynccontextmanager
 
 # Imports required by the service's model
-# TODO: 1. ADD REQUIRED IMPORTS (ALSO IN THE REQUIREMENTS.TXT)
+import numpy as np
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+import os
+import io
+import matplotlib
+
+matplotlib.use('agg')
 
 settings = get_settings()
 
 
 class MyService(Service):
-    # TODO: 2. CHANGE THIS DESCRIPTION
     """
-    My service model
+    Planet recognition service model
     """
 
     # Any additional fields must be excluded for Pydantic to work
@@ -36,14 +45,12 @@ class MyService(Service):
 
     def __init__(self):
         super().__init__(
-            # TODO: 3. CHANGE THE SERVICE NAME AND SLUG
-            name="My Service",
-            slug="my-service",
+            name="planet recognition service",
+            slug="planet-recognition-service",
             url=settings.service_url,
             summary=api_summary,
             description=api_description,
             status=ServiceStatus.AVAILABLE,
-            # TODO: 4. CHANGE THE INPUT AND OUTPUT FIELDS, THE TAGS AND THE HAS_AI VARIABLE
             data_in_fields=[
                 FieldDescription(
                     name="image",
@@ -60,31 +67,50 @@ class MyService(Service):
             ],
             tags=[
                 ExecutionUnitTag(
-                    name=ExecutionUnitTagName.IMAGE_PROCESSING,
-                    acronym=ExecutionUnitTagAcronym.IMAGE_PROCESSING,
+                    name=ExecutionUnitTagName.IMAGE_RECOGNITION,
+                    acronym=ExecutionUnitTagAcronym.IMAGE_RECOGNITION,
                 ),
             ],
             has_ai=True,
-            # OPTIONAL: CHANGE THE DOCS URL TO YOUR SERVICE'S DOCS
-            docs_url="https://docs.swiss-ai-center.ch/reference/core-concepts/service/",
+            docs_url="https://docs.swiss-ai-center.ch/reference/services/planet-recognition",
         )
         self._logger = get_logger(settings)
 
-        # TODO: 5. INITIALIZE THE MODEL (BY IMPORTING IT FROM A FILE)
-        self._model = ...
+        self._model = tf.keras.models.load_model(
+            os.path.join(os.path.dirname(__file__), "..", "planet_recognition_model.h5")
+        )
 
-    # TODO: 6. CHANGE THE PROCESS METHOD (CORE OF THE SERVICE)
     def process(self, data):
         # NOTE that the data is a dictionary with the keys being the field names set in the data_in_fields
         # The objects in the data variable are always bytes. It is necessary to convert them to the desired type
         # before using them.
-        # raw = data["image"].data
-        # input_type = data["image"].type
-        # ... do something with the raw data
+        raw = data["image"].data
+        input_type = data["image"].type
+
+        # Convert raw bytes to a PIL image
+        image = Image.open(io.BytesIO(raw))
+
+        # Resize the PIL image and convert it to grayscale ("L" mode)
+        image = image.convert("L").resize((32, 32))
+
+        # Convert the PIL image to a NumPy array and normalize
+        image_array = np.array(image, dtype=np.float32) / 255.0
+
+        # Add a batch dimension and a channel dimension
+        image_array = np.expand_dims(image_array, axis=0)  # Shape becomes (1, 32, 32)
+        image_array = np.expand_dims(image_array, axis=-1)  # Shape becomes (1, 32, 32)
+
+        # Create a TensorFlow dataset from the image array
+        X_predict = tf.data.Dataset.from_tensor_slices(image_array).batch(1)
+
+        # Use the model to predict images
+        prediction = self._model.predict(X_predict)
+
+        result = np.argmax(prediction, axis=-1)
 
         # NOTE that the result must be a dictionary with the keys being the field names set in the data_out_fields
         return {
-            "result": TaskData(data=..., type=FieldDescriptionType.APPLICATION_JSON)
+            "result": TaskData(data=str(result), type=FieldDescriptionType.APPLICATION_JSON)
         }
 
 
@@ -140,19 +166,17 @@ async def lifespan(app: FastAPI):
         await service_service.graceful_shutdown(my_service, engine_url)
 
 
-# TODO: 7. CHANGE THE API DESCRIPTION AND SUMMARY
-api_description = """My service
-bla bla bla...
+api_description = """Planet recognition service
+Service that recognizes pictures of planets.
 """
-api_summary = """My service
-bla bla bla...
+api_summary = """Planet recognition service
+Service that recognizes pictures of planets.
 """
 
 # Define the FastAPI application with information
-# TODO: 8. CHANGE THE API TITLE, VERSION, CONTACT AND LICENSE
 app = FastAPI(
     lifespan=lifespan,
-    title="My Service API.",
+    title="Planet Recognition Service API.",
     description=api_description,
     version="0.0.1",
     contact={
