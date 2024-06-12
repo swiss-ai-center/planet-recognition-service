@@ -1,26 +1,10 @@
 import json
 import sys
 from pathlib import Path
-from typing import List
-
-import matplotlib.pyplot as plt
 import tensorflow as tf
 import yaml
 
 from utils.seed import set_seed
-
-
-def get_preview_plot(ds: tf.data.Dataset, labels: List[str]) -> plt.Figure:
-    """Plot a preview of the prepared dataset"""
-    fig = plt.figure(figsize=(10, 5), tight_layout=True)
-    for images, label_idxs in ds.take(1):
-        for i in range(10):
-            plt.subplot(2, 5, i + 1)
-            plt.imshow(images[i].numpy().astype("uint8"), cmap="gray")
-            plt.title(labels[label_idxs[i].numpy()])
-            plt.axis("off")
-
-    return fig
 
 
 def main() -> None:
@@ -59,10 +43,6 @@ def main() -> None:
 
     if not prepared_dataset_folder.exists():
         prepared_dataset_folder.mkdir(parents=True)
-
-    # Save the preview plot
-    preview_plot = get_preview_plot(ds_train, labels)
-    preview_plot.savefig(prepared_dataset_folder / "preview.png")
 
     # Normalize the data
     normalization_layer = tf.keras.layers.experimental.preprocessing.Rescaling(
