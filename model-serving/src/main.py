@@ -23,13 +23,10 @@ from contextlib import asynccontextmanager
 # Imports required by the service's model
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
 
 import os
 import io
-import matplotlib
-
-matplotlib.use('agg')
+import json
 
 settings = get_settings()
 
@@ -79,6 +76,7 @@ class MyService(Service):
         self._model = tf.keras.models.load_model(
             os.path.join(os.path.dirname(__file__), "..", "planet_recognition_model.h5")
         )
+        self._labels = os.path.join(os.path.dirname(__file__), "..", "labels.json")
 
     def process(self, data):
         # NOTE that the data is a dictionary with the keys being the field names set in the data_in_fields
@@ -106,7 +104,12 @@ class MyService(Service):
         # Use the model to predict images
         prediction = self._model.predict(X_predict)
 
-        result = np.argmax(prediction, axis=-1)
+        predicted_class = np.argmax(prediction, axis=-1)
+
+        # Get label
+        with open(self._labels, 'r') as file:
+            class_labels = json.load(file)
+        result = class_labels[int(predicted_class)]
 
         # NOTE that the result must be a dictionary with the keys being the field names set in the data_out_fields
         return {
