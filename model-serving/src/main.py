@@ -1,5 +1,6 @@
 import asyncio
 import time
+import bentoml
 
 from PIL import Image
 from fastapi import FastAPI
@@ -73,9 +74,15 @@ class MyService(Service):
         )
         self._logger = get_logger(settings)
 
-        self._model = tf.keras.models.load_model(
-            os.path.join(os.path.dirname(__file__), "..", "planet_recognition_model.h5")
-        )
+        # Import the model to the model store from a local model folder
+        try:
+            model_path = os.path.join(os.path.dirname(__file__), "..", "celestial_bodies_classifier_model.bentomodel")
+            bentoml.models.import_model(model_path)
+        except bentoml.exceptions.BentoMLException:
+            print("Model already exists in the model store - skipping import.")
+
+        # Load model
+        self._model = bentoml.keras.load_model("celestial_bodies_classifier_model")
         self._labels = os.path.join(os.path.dirname(__file__), "..", "labels.json")
 
     def process(self, data):
