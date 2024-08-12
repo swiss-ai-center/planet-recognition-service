@@ -90,7 +90,6 @@ class MyService(Service):
         # The objects in the data variable are always bytes. It is necessary to convert them to the desired type
         # before using them.
         raw = data["image"].data
-        input_type = data["image"].type
 
         # Convert raw bytes to a PIL image
         image = Image.open(io.BytesIO(raw))
