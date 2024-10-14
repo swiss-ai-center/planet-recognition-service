@@ -1,4 +1,3 @@
 # model-creation
 
-<!-- TODO 1: Update the description of the service and the link to the documentation. -->
-_Check the [related documentation](https://docs.swiss-ai-center.ch/reference/core-concepts/service/) for more information._
+_Check the [related documentation](https://docs.swiss-ai-center.ch/reference/services/planet-recognition/) for more information._
