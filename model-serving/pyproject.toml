@@ -1,5 +1,6 @@
 [project]
 name = "planet-recognition-service"
+version = "3.11"
 
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]
